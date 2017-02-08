@@ -55,7 +55,7 @@ for x in soup1.find_all("h2", class_="story-heading"):
 		headlines.append(t)
 
 nytimes_headlines = headlines[0:10]
-
+print (nytimes_headlines)
 #####################
 
 ## PART 3 (200 points)
