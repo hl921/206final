@@ -107,6 +107,7 @@ for x in soup.find_all(class_="field field-name-field-person-titles field-type-t
 		titles.append(t)
 
 umsi_titles = dict(zip(names, titles))
+print (umsi_titles)
 
 
 
