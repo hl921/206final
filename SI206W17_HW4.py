@@ -16,11 +16,7 @@ from bs4 import BeautifulSoup
 url = "http://www.nytimes.com"
 r = requests.get(url)
 html_text = r.text
-# print(html_text)
 
-# f = open("nytimes_data.html","w")
-# f.write(html_text)
-# f.close()
 
 
 #####################
@@ -51,17 +47,6 @@ html_text = r.text
 headlines = []
 
 soup1 = BeautifulSoup(html_text, "html.parser")
-
-
-# f = open("sipeeps.html","w")
-# f.write(htmldoc)
-# f.close()
-
-# for story_heading in soup.find_all(class_="story_heading"):
-# 	if story_heading.a:
-# 		print (story_heading.a.text.replace("\n"," ").strip())
-# 	else:
-# 		print (story_heading.contents[0].strip())
 
 for x in soup1.find_all("h2", class_="story-heading"):
 	arttitle = x.string
