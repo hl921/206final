@@ -53,10 +53,10 @@ except:
 def get_user_tweets(username):
 	unique_identifier = 'twitter_{}'.format(username)
 	if unique_identifier in CACHE_DICTION:
-		print('using cached data for', username)
+		#print('using cached data for', username)
 		twitter_results = CACHE_DICTION[unique_identifier]
 	else:
-		print('getting data from internet for', username)
+		#print('getting data from internet for', username)
 		twitter_results = api.user_timeline(username)
 		CACHE_DICTION[unique_identifier] = twitter_results
 		f = open(CACHE_FNAME, 'w')
@@ -157,7 +157,7 @@ for single_tweet in umich_tweets:
 		j = (n["id_str"], n["screen_name"], api.get_user(n["id_str"])["favourites_count"], api.get_user(n["id_str"])["description"])
 		user_lst.append(j)
 
-print(user_lst)
+# print(user_lst)
 statement = 'INSERT OR IGNORE INTO Users VALUES (?, ?, ?, ?)'
 
 for x in user_lst:
@@ -170,28 +170,49 @@ conn.commit()
 # All of the following sub-tasks require writing SQL statements and executing them using Python.
 
 # Make a query to select all of the records in the Users database. Save the list of tuples in a variable called users_info.
+q1 = "SELECT * from Users"
+cur.execute(q1)
+users_info = cur.fetchall()
+
+# print("user info below")
+# print(users_info)
 
 # Make a query to select all of the user screen names from the database. Save a resulting list of strings (NOT tuples, the strings inside them!) in the variable screen_names. HINT: a list comprehension will make this easier to complete!
+q2 = "SELECT screen_name from Users"
+cur.execute(q2)
+screen_names = [''.join(x) for x in cur.fetchall()]
+
 
 
 # Make a query to select all of the tweets (full rows of tweet information) that have been retweeted more than 25 times. Save the result (a list of tuples, or an empty list) in a variable called more_than_25_rts.
 
-
+q3 = "SELECT * from Tweets WHERE retweets>25"
+cur.execute(q3)
+more_than_25_rts = cur.fetchall()
+# print (more_than_25_rts)
 
 # Make a query to select all the descriptions (descriptions only) of the users who have favorited more than 25 tweets. Access all those strings, and save them in a variable called descriptions_fav_users, which should ultimately be a list of strings.
 
+q4 = "SELECT description from Users WHERE num_favs>25"
+cur.execute(q4)
+descriptions_fav_users = [''.join(x) for x in cur.fetchall()]
+# print(descriptions_fav_users)
 
 
 # Make a query using an INNER JOIN to get a list of tuples with 2 elements in each tuple: the user screenname and the text of the tweet -- for each tweet that has been retweeted more than 50 times. Save the resulting list of tuples in a variable called joined_result.
 
-
+q5 = "SELECT screen_name, text FROM Users INNER JOIN Tweets WHERE Tweets.retweets > 50"
+cur.execute(q5)
+joined_result = cur.fetchall()
+print(joined_result)
 
 
 ## Task 4 - Manipulating data with comprehensions & libraries
 
 ## Use a set comprehension to get a set of all words (combinations of characters separated by whitespace) among the descriptions in the descriptions_fav_users list. Save the resulting set in a variable called description_words.
 
-
+description_words = {x for x in descriptions_fav_users}
+# print(description_words)
 
 ## Use a Counter in the collections library to find the most common character among all of the descriptions in the descriptions_fav_users list. Save that most common character in a variable called most_common_char. Break any tie alphabetically (but using a Counter will do a lot of work for you...).
 
