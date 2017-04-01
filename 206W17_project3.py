@@ -8,7 +8,8 @@
 
 import unittest
 import itertools
-import collections
+from collections import Counter 
+from collections import defaultdict
 import tweepy
 import twitter_info # same deal as always...
 import json
@@ -135,7 +136,7 @@ cur.execute(statement)
 lst = []
 for single_tweet in umich_tweets:
 	y = single_tweet
-	z  = (y["id"], y["user"]["id_str"], y["text"], y["created_at"], y["retweet_count"])
+	z  = (y["id"], y["text"], y["user"]["id_str"], y["created_at"], y["retweet_count"])
 	lst.append(z)
 
 
@@ -196,25 +197,35 @@ more_than_25_rts = cur.fetchall()
 q4 = "SELECT description from Users WHERE num_favs>25"
 cur.execute(q4)
 descriptions_fav_users = [''.join(x) for x in cur.fetchall()]
-# print(descriptions_fav_users)
+
 
 
 # Make a query using an INNER JOIN to get a list of tuples with 2 elements in each tuple: the user screenname and the text of the tweet -- for each tweet that has been retweeted more than 50 times. Save the resulting list of tuples in a variable called joined_result.
 
-q5 = "SELECT screen_name, text FROM Users INNER JOIN Tweets WHERE Tweets.retweets > 50"
+q5 = "SELECT screen_name, text FROM Users INNER JOIN Tweets WHERE Tweets.retweets > 10"
 cur.execute(q5)
 joined_result = cur.fetchall()
-print(joined_result)
+# print(joined_result)
 
 
 ## Task 4 - Manipulating data with comprehensions & libraries
 
 ## Use a set comprehension to get a set of all words (combinations of characters separated by whitespace) among the descriptions in the descriptions_fav_users list. Save the resulting set in a variable called description_words.
 
-description_words = {x for x in descriptions_fav_users}
-# print(description_words)
+description_words = {tuple(x.split()) for x in descriptions_fav_users}
+
 
 ## Use a Counter in the collections library to find the most common character among all of the descriptions in the descriptions_fav_users list. Save that most common character in a variable called most_common_char. Break any tie alphabetically (but using a Counter will do a lot of work for you...).
+
+count = Counter()
+for words in description_words:
+	for word in words:
+		for letter in word:
+			count[letter] += 1
+
+x = count.most_common(1)
+most_common_char = x[0][0]
+
 
 
 
@@ -224,8 +235,23 @@ description_words = {x for x in descriptions_fav_users}
 
 
 
-### IMPORTANT: MAKE SURE TO CLOSE YOUR DATABASE CONNECTION AT THE END OF THE FILE HERE SO YOU DO NOT LOCK YOUR DATABASE (it's fixable, but it's a pain). ###
+q6 = "SELECT Users.screen_name, Tweets.text FROM Users LEFT JOIN Tweets on Users.user_id=Tweets.user_id ORDER BY Users.user_id"
 
+cur.execute(q6)
+l = cur.fetchall()
+
+
+d = defaultdict(list)
+for k, v in l:
+	if v is not None:
+		d[k].append(v)
+
+twitter_info_diction = dict(d)
+# print (twitter_info_diction)
+
+
+### IMPORTANT: MAKE SURE TO CLOSE YOUR DATABASE CONNECTION AT THE END OF THE FILE HERE SO YOU DO NOT LOCK YOUR DATABASE (it's fixable, but it's a pain). ###
+conn.close()
 
 ###### TESTS APPEAR BELOW THIS LINE ######
 ###### Note that the tests are necessary to pass, but not sufficient -- must make sure you've followed the instructions accurately! ######
@@ -324,7 +350,7 @@ class Task3(unittest.TestCase):
 
 class Task4(unittest.TestCase):
 	def test_description_words(self):
-		print("To help test, description words looks like:", description_words)
+		# print("To help test, description words looks like:", description_words)
 		self.assertEqual(type(description_words),type({"hi","Bye"}),"Testing that description words is a set")
 	def test_common_char(self):
 		self.assertEqual(type(most_common_char),type(""),"Testing that most_common_char is a string")
