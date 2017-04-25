@@ -144,10 +144,11 @@ for movie in imdb_data:
 	actorss =  movie["Actors"]
 	languages = movie["Language"]
 	boxoffices = movie["BoxOffice"]	
+	imdbid = movie["imdbID"]
 
-	imdb_info = [titles, directors, ratings, actorss, languages, boxoffices]
+	imdb_info = [titles, directors, ratings, actorss, languages, boxoffices, imdbid]
 	imdb.append(imdb_info)
-print (imdb)
+
 
 
 
@@ -158,12 +159,18 @@ class Movie():
 		self.director = director
 		self.rating = rating
 		self.actors = actors
-		self.language = len(language)
+		self.language = len(language.split(","))
 		self.boxoffice = boxoffice
 
 	def __str__(self):
 		return "\n The title of the movie is {}. The director of the movie is {}. Its rating is {} and starring actors are {}. It is translated in {} different languages, and its Box Office earning is {}.\n".format(self.title, self.director, self.rating, self.actors, self.language, self.boxoffice)
 
+	def good_movie(rating, title):		
+		if float(rating) > 7:
+			return "\n{} is a good movie.".format(title)
+		else:
+			return "\n{} is a low rated movie".format(title)
+	# one more method
 
 #### Calling class Movie
 
@@ -176,10 +183,21 @@ Mean_Girls_info = Movie(mg[0], mg[1], mg[2], mg[3], mg[4], mg[5])
 Avengers_info = Movie(av[0], av[1], av[2], av[3], av[4], av[5])
 Inception_info = Movie(ic[0], ic[1], ic[2], ic[3], ic[4], ic[5])
 
+MGnumber = Movie.good_movie(mg[2], mg[0])
+AVnumber = Movie.good_movie(av[2], av[0])
+ICnumber = Movie.good_movie(ic[2], ic[0])
+
+print(MGnumber)
+print(AVnumber)
+print(ICnumber)
+
 # call_class_Movie = {"Mean_Girls_info": Mean_Girls_info, "Avengers_info" : Avengers_info, "Inception_info": Inception_info}
 print (Mean_Girls_info)
 print (Avengers_info)
 print (Inception_info)
+
+
+
 
 #------------------------------------------------------------------------------
 
@@ -198,15 +216,17 @@ cur.execute('DROP TABLE IF EXISTS Tweets')
 
 table_spec = 'CREATE TABLE IF NOT EXISTS '
 table_spec += 'Tweets (tweet_id INTEGER PRIMARY KEY, '
-table_spec += 'text TEXT, screen_name TEXT, Movie_Title TEXT, Favorites INTEGER, retweets INTEGER)'
+table_spec += 'text TEXT, screen_name TEXT, user_id INTEGER, Movie_Title TEXT, Favorites INTEGER, retweets INTEGER)'
 
 cur.execute(table_spec)
 
 
 ## Setting up Users table
+cur.execute('DROP TABLE IF EXISTS Users') 
+
 table_spec = 'CREATE TABLE IF NOT EXISTS '
 table_spec += 'Users (user_id INTEGER PRIMARY KEY, '
-table_spec += 'screen_name TEXT, num_favs INTEGER, description TEXT)'
+table_spec += 'screen_name TEXT, num_favs INTEGER, description TEXT)' #add number of followers
 
 cur.execute(table_spec)
 
@@ -215,9 +235,12 @@ cur.execute(statement)
 
 
 ## Setting up Movies table
+
+cur.execute('DROP TABLE IF EXISTS Movies') 
+
 table_spec = 'CREATE TABLE IF NOT EXISTS '
-table_spec += 'Movies (movie_id INTEGER PRIMARY KEY, '
-table_spec += 'Movie_Title TEXT, Director TEXT, Rating TEXT, Top Billed Actor TEXT, Box Office TEXT)'
+table_spec += 'Movies (movie_id TEXT PRIMARY KEY, '
+table_spec += 'Movie_Title TEXT, Director TEXT, Rating TEXT, Top_Billed_Actor TEXT, Languages TEXT, Box_Office TEXT)'
 
 cur.execute(table_spec)
 
@@ -231,42 +254,53 @@ cur.execute(statement)
 #### PART 6: Loading information into tables
 
 ## Load to Tweets table
-lst = []
+list_of_tweets = []
 for x in movie_tweets:
 	w = x["statuses"]
 	for y in w:
-		z  = (y["id"], y["text"], y["user"]["screen_name"], x["search_metadata"]["query"], y["favorite_count"], y["retweet_count"])
-		lst.append(z)
+		z  = (y["id"], y["text"], y["user"]["screen_name"], y["user"]["id"], x["search_metadata"]["query"], y["favorite_count"], y["retweet_count"])
+		list_of_tweets.append(z)
 
 
-statement = 'INSERT INTO Tweets VALUES (?, ?, ?, ?, ?, ?)'
+statement = 'INSERT INTO Tweets VALUES (?, ?, ?, ?, ?, ?, ?)'
 
-for x in lst:
+for x in list_of_tweets:
 	cur.execute(statement, x)
 
 
 
 ## Load to Users table
+list_of_users = []
+for x in movie_tweets:
+	w = x["statuses"]
+	for y in w:
+		n = y["user"]
+		j = (n["id"], n["screen_name"], api.get_user(n["id"])["favourites_count"], api.get_user(n["id"])["description"])
+		list_of_users.append(j)
 
-# user_lst = []
-# for x in movie_tweets:
-# 	for single_tweet in x:
-# 		y = single_tweet
-# 		t = y["entities"]["user_mentions"]
-# 		for n in t:
-# 			j = (n["id_str"], n["screen_name"], api.get_user(n["id_str"])["favourites_count"], api.get_user(n["id_str"])["description"])
-# 			user_lst.append(j)
 
-# # print(user_lst)
-# statement = 'INSERT OR IGNORE INTO Users VALUES (?, ?, ?, ?)'
+statement = 'INSERT OR IGNORE INTO Users VALUES (?, ?, ?, ?)'
 
-# for x in user_lst:
-# 	cur.execute(statement, x)
+for x in list_of_users:
+	cur.execute(statement, x)
 
 
 
 
 ## Load to Movies table
+list_of_movies = []
+for x in imdb:
+
+	z = (x[6], x[0], x[1], x[2], x[3], x[4], x[5])
+	list_of_movies.append(z)
+
+# print (list_of_movies)
+
+
+statement = 'INSERT OR IGNORE INTO Movies VALUES (?, ?, ?, ?, ?, ?, ?)'
+
+for x in list_of_movies:
+	cur.execute(statement, x)
 
 conn.commit()
 
@@ -275,12 +309,50 @@ conn.commit()
 
 #------------------------------------------------------------------------------
 
+# You must make at least 3 queries to your database, resulting in information that would have been more difficult to combine without use of the database, and use the results of the queries to process your data. At least one of those queries should be a JOIN query (of any level of complexity). In other words, it would not count to get data, accumulate a list of, say, book titles, load the titles into a Books table in your database, and then make a query to get all of the book titles from the database. You didn't need a query for that! But if you were to get all the book titles by authors that had been nominated for >3 awards, based on a separate Authors table that had a relationship to the Books table -- that would count.
+
+# You must process the data you gather and store and extract from the database in at least four of the following ways:
+
+# Set / dictionary comprehensions, and/or list comprehensions
+# Using new containers from the collections library
+# Using iteration methods from the itertools library
+# Accumulation in dictionaries and processing of the data (e.g. counts, lists associated with keys… like umsi_titles, but of course something different)
+# Using generator expressions and/or generator functions (recall HW6)
+# Sorting with a key parameter
+# Using the builtins: map or filter (which each return iterators) in order to filter a sequence or transform a sequence of data
+# Using regular expressions
+
+# At least 2 test methods pertaining to each function and to each class method you define. Basically, you must have a test suite for your code! It should cover edge cases, just like we've focused on and/or looked at all semester. You should write your tests first, and, following that, use the iterative process of tests and code that we've discussed in class… Writing tests initially part of one of these upcoming assignments! See more below.
+
+# You must ultimately provide a complete README file in a clear, readable outline structure, which should be a .PDF or a .txt file. Like Project 1, you must provide a complete set of documentation for your code. It should not be essay-format (we're a little more strict now that you have more experience writing and using documentation), but rather documentation outline format. We'll show some examples! It must contain all of the information listed in the README REQUIREMENTS.
 
 #### PART 7: Making queries
 
-# I want to make a query that accesses the number of times the movie Twitter mentions a specific starring actor from the movie.
+# see if the movie title is in the user's description
 
-# I want to make a query that accesses all the tweets from each of the movie Twitter accounts with over 500 favorites. 
+#use regular expression
+
+# how many total retweets are there per movie out of the tweets gathered (join movie titles)
+q1 = "SELECT Movies.Movie_Title, retweets from Tweets INNER JOIN Movies WHERE Tweets.retweets > 100"
+cur.execute(q1)
+retweet_100 = cur.fetchall()
+print (retweet_100)
+
+#sort by number of total retweets
+
+
+# out of the tweets how many times the staring actor was mentioned 
+# Use counts
+
+# count = Counter()
+# for words in description_words:
+# 	for word in words:
+# 		for letter in word:
+# 			count[letter] += 1
+
+# x = count.most_common(1)
+# most_common_char = x[0][0]
+
 
 
 
@@ -309,7 +381,7 @@ class Testing(unittest.TestCase):
     	cur = conn.cursor()
     	cur.execute('SELECT * FROM Tweets');
     	result = cur.fetchall()
-    	self.assertTrue(len(result[1])==6,"Testing that there are 6 columns in the Tweets table")
+    	self.assertTrue(len(result[1])==7,"Testing that there are 7 columns in the Tweets table")
     	conn.close()
 
     def test_4(self):
@@ -325,7 +397,7 @@ class Testing(unittest.TestCase):
     	cur = conn.cursor()
     	cur.execute('SELECT * FROM Movies');
     	result = cur.fetchall()
-    	self.assertTrue(len(result[1])==7,"Testing that there are 7 columns in the Users table")
+    	self.assertTrue(len(result[1])==7,"Testing that there are 7 columns in the Movies table")
     	conn.close()
 
     def test_6(self):
