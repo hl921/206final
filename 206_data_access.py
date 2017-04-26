@@ -150,7 +150,7 @@ for movie in imdb_data:
 	imdb.append(imdb_info)
 
 
-
+###Class Movie
 
 class Movie():
 
@@ -312,7 +312,7 @@ conn.commit()
 
 #------------------------------------------------------------------------------
 
-# You must make at least 3 queries to your database, resulting in information that would have been more difficult to combine without use of the database, and use the results of the queries to process your data. At least one of those queries should be a JOIN query (of any level of complexity). In other words, it would not count to get data, accumulate a list of, say, book titles, load the titles into a Books table in your database, and then make a query to get all of the book titles from the database. You didn't need a query for that! But if you were to get all the book titles by authors that had been nominated for >3 awards, based on a separate Authors table that had a relationship to the Books table -- that would count.
+
 
 # You must process the data you gather and store and extract from the database in at least four of the following ways:
 
@@ -419,7 +419,7 @@ print('\n Most popular word used in tweets over 10 retweets is ' +str(most_commo
 
 #### PART 8: Create an output file
 
-# Make a text file with a nice summary of each movie with its total number of retweets, how many times the word "movie" is mentioned in user's description, and what the most popular word used in tweets over 10 retweets is, other than "RT".
+# Make a text file with a nice summary of each movie with its total number of retweets, how many times the word "movie" is mentioned in user's description, and what the most popular word used in tweets over 10 retweets is.
 
 result_fname = "206_final_project_result_summary"
 
@@ -454,10 +454,21 @@ class Testing(unittest.TestCase):
     def test_cache_Twitter(self):
         self.assertEqual(type(tweets), type({}), "testing Twitter cached data is a dictionary")
 
+    def test_imdb_id(self):
+    	testid = search_imdb_ID("Zootopia")
+    	self.assertEqual(str(testid), "tt2948356")
+
     def test_cache_IMDB(self):
         self.assertEqual(type(imdb_data[0]), type({}), "testing IMDb cached data is a list of dictionary")
 
-    def test_3(self):
+    def test_class_Movie(self):
+    	self.assertEqual("\n The title of the movie is Zootopia. The director of the movie is Byron Howard, Rich Moore, Jared Bush. Its rating is 8.1 and starring actors are Ginnifer Goodwin, Jason Bateman, Idris Elba, Jenny Slate. It is translated in 1 different languages, and its Box Office earning is $341,264,012.00.\n", str(Mean_Girls_info))
+
+
+    def test_rating(self):
+    	self.assertEqual("Zootopia is a good movie.", str(MGnumber))
+
+    def test_Tweets_table(self):
     	conn = sqlite3.connect('206_final_data.db')
     	cur = conn.cursor()
     	cur.execute('SELECT * FROM Tweets');
@@ -465,7 +476,7 @@ class Testing(unittest.TestCase):
     	self.assertTrue(len(result[1])==7,"Testing that there are 7 columns in the Tweets table")
     	conn.close()
 
-    def test_4(self):
+    def test_Users_table(self):
     	conn = sqlite3.connect('206_final_data.db')
     	cur = conn.cursor()
     	cur.execute('SELECT * FROM Users');
@@ -473,7 +484,7 @@ class Testing(unittest.TestCase):
     	self.assertTrue(len(result[1])==4,"Testing that there are 4 columns in the Users table")
     	conn.close()
 
-    def test_5(self):
+    def test_Movies_table(self):
     	conn = sqlite3.connect('206_final_data.db')
     	cur = conn.cursor()
     	cur.execute('SELECT * FROM Movies');
@@ -481,25 +492,18 @@ class Testing(unittest.TestCase):
     	self.assertTrue(len(result[1])==7,"Testing that there are 7 columns in the Movies table")
     	conn.close()
 
-    # def test_6(self):
-    #     self.assertEqual(type(total_RTs), type({"hi":"hi"}))
+    def test_description_words(self):
+    	self.assertEqual(type(all_words), type([]))
 
+    def test_total_RTS(self):
+    	self.assertEqual(type(total_RTs), type([]))
 
-    # def test_7(self):
-    #     self.assertEqual(type(popular_tweets),type({"hi":3}))
+    def test_most_common_word(self):
+    	self.assertEqual(type(most_common_word, type("hi")))
 
-
-    # def test_8(self):
-    #     self.assertEqual(type(list(actor_and_director.keys())[0]),type(""),"Testing that a key of the dictionary is a string")
-
-    # def test_9(self):
-    #     self.assertEqual(type(list(actor_and_director.values())[0]),type(1),"Testing that a key of the dictionary is an integer")
-
-    # def test_10(self):
-    #     self.assertEqual(type(list(popular_tweets.keys())[0]),type(1),"Testing that a value in the dictionary is an integer")
-
-    # def test_10(self):
-    #     self.assertEqual(type(list(popular_tweets.keys())[0]),type(""),"Testing that a value in the dictionary is a string")
+    def test_number_of_times(self):
+    	self.assertEqual(type(number_of_times, type(1)))
+ 
 
 unittest.main(verbosity=2)
 
