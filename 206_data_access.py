@@ -116,7 +116,7 @@ def get_imdb_data(search_ID):
 
 #### PART 3: Invoking Functions
 
-movies = ["Mean Girls", "Avengers", "Inception"]
+movies = ["Zootopia", "Oldboy", "Inception"]
 
 imdb_ids = []
 movie_tweets = []
@@ -168,6 +168,8 @@ class Movie():
 	def good_movie(rating, title):		
 		if float(rating) > 7:
 			return "\n{} is a good movie.".format(title)
+		elif float(rating) > 5:
+			return "\n{} is an average movie.".format(title)
 		else:
 			return "\n{} is a low rated movie".format(title)
 	# one more method
@@ -269,6 +271,7 @@ for x in list_of_tweets:
 
 
 
+
 ## Load to Users table
 list_of_users = []
 for x in movie_tweets:
@@ -328,52 +331,130 @@ conn.commit()
 
 #### PART 7: Making queries
 
+
+
+# how many total retweets are there per movie out of the tweets gathered (join movie titles)
+q1 = "SELECT Movies.Movie_Title, Tweets.retweets from Movies LEFT JOIN Tweets on Movies.Movie_Title = Tweets.Movie_Title"
+
+cur.execute(q1)
+retweet_100 = cur.fetchall()
+
+
+d = defaultdict(list)
+for k, v in retweet_100:
+	if v is not None:
+		d[k].append(v)
+
+twitter_info_diction = dict(d)
+
+
+total = []
+acc = 0
+for value in twitter_info_diction.values():
+	for rtnum in value:
+		acc += rtnum
+	total.append(acc)
+
+
+movie_names = []
+for key in twitter_info_diction.keys():
+	movie_names.append(key)
+
+total_RTs = list(zip(movie_names,total))
+
+
+for x in total_RTs:
+	sent = "The total number of retweets for the movie "+str(x[0])+" is " + str(x[1])+" retweets."
+	print (sent)
+
+
+
 # see if the movie title is in the user's description
+# q3 = "SELECT description from Users WHERE Movies.Top_Billed_Actor is "
 
 #use regular expression
 
-# how many total retweets are there per movie out of the tweets gathered (join movie titles)
-q1 = "SELECT Movies.Movie_Title, retweets from Tweets INNER JOIN Movies WHERE Tweets.retweets > 100"
-cur.execute(q1)
-retweet_100 = cur.fetchall()
-print (retweet_100)
-
-#sort by number of total retweets
-
-
-# out of the tweets how many times the staring actor was mentioned 
-# Use counts
-
-# count = Counter()
-# for words in description_words:
-# 	for word in words:
-# 		for letter in word:
-# 			count[letter] += 1
-
-# x = count.most_common(1)
-# most_common_char = x[0][0]
+q2 = "SELECT description from Users"
+cur.execute(q2)
+all_text = [''.join(x) for x in cur.fetchall()]
 
 
 
+description_words = [x.split() for x in all_text]
+
+all_words = [item for sublist in description_words for item in sublist]
+
+cnt = 0
+for word in all_words:
+	if "movie" == word:
+		cnt += 1
+	elif "Movie" == word:
+		cnt += 1
 
 
-#------------------------------------------------------------------------------
+print ("\n The word 'Movie' is mentioned " + str(cnt)+ " times in Twitter user descriptions.")
+
+
+#Most popular word from popular tweets (tweets retweeted more than 10 times)
+
+
+q3 = "SELECT text FROM Tweets WHERE retweets > 10"
+cur.execute(q3)
+
+popular_tweets = [''.join(x) for x in cur.fetchall()]
+
+popular_words = {tuple(x.split()) for x in popular_tweets}
+
+count = Counter()
+for words in popular_words:
+	for word in words:
+		count[word] += 1
+
+x = count.most_common(1)
+most_common_word = x[0][0]
+number_of_times = x[0][1]
+
+print('\n Most popular word used in tweets over 10 retweets is ' +str(most_common_word) + ' and it is mentioned ' + str(number_of_times) + ' times.')
+
 
 #### PART 8: Create an output file
 
-# Make a text file with a nice summary of each movie with it's tweets over 500 retweets and how much the starring ator loves the director of the movie. 
+# Make a text file with a nice summary of each movie with its total number of retweets, how many times the word "movie" is mentioned in user's description, and what the most popular word used in tweets over 10 retweets is, other than "RT".
+
+result_fname = "206_final_project_result_summary"
 
 
+
+f = open(result_fname, 'w')
+f.write(str(Mean_Girls_info))
+f.write(MGnumber)
+f.write("\n\n\n")
+f.write(str(Avengers_info))
+f.write(AVnumber)
+f.write("\n\n\n")
+f.write(str(Inception_info))
+f.write(ICnumber)
+f.write("\n\n\n\n\n")
+
+for x in total_RTs:
+	sent = "\nThe total number of retweets for the movie "+str(x[0])+" is " + str(x[1])+" retweets.\n\n"
+	f.write (sent)
+
+f.write("\n The word 'Movie' is mentioned " + str(cnt)+ " times in Twitter user descriptions.\n\n")
+
+f.write('\n Most popular word used in tweets over 10 retweets is ' +str(most_common_word) + ' and it is mentioned ' + str(number_of_times) + ' times.\n\n')
+
+f.close() 
 
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
 class Testing(unittest.TestCase):
-    def test_1(self):
+    def test_cache_Twitter(self):
         self.assertEqual(type(tweets), type({}), "testing Twitter cached data is a dictionary")
 
-    def test_2(self):
+    def test_cache_IMDB(self):
         self.assertEqual(type(imdb_data[0]), type({}), "testing IMDb cached data is a list of dictionary")
 
     def test_3(self):
@@ -400,25 +481,25 @@ class Testing(unittest.TestCase):
     	self.assertTrue(len(result[1])==7,"Testing that there are 7 columns in the Movies table")
     	conn.close()
 
-    def test_6(self):
-        self.assertEqual(type(actor_and_director), type({"hi":"hi"}))
+    # def test_6(self):
+    #     self.assertEqual(type(total_RTs), type({"hi":"hi"}))
 
 
-    def test_7(self):
-        self.assertEqual(type(popular_tweets),type({"hi":3}))
+    # def test_7(self):
+    #     self.assertEqual(type(popular_tweets),type({"hi":3}))
 
 
-    def test_8(self):
-        self.assertEqual(type(list(actor_and_director.keys())[0]),type(""),"Testing that a key of the dictionary is a string")
+    # def test_8(self):
+    #     self.assertEqual(type(list(actor_and_director.keys())[0]),type(""),"Testing that a key of the dictionary is a string")
 
-    def test_9(self):
-        self.assertEqual(type(list(actor_and_director.values())[0]),type(1),"Testing that a key of the dictionary is an integer")
+    # def test_9(self):
+    #     self.assertEqual(type(list(actor_and_director.values())[0]),type(1),"Testing that a key of the dictionary is an integer")
 
-    def test_10(self):
-        self.assertEqual(type(list(popular_tweets.keys())[0]),type(1),"Testing that a value in the dictionary is an integer")
+    # def test_10(self):
+    #     self.assertEqual(type(list(popular_tweets.keys())[0]),type(1),"Testing that a value in the dictionary is an integer")
 
-    def test_10(self):
-        self.assertEqual(type(list(popular_tweets.keys())[0]),type(""),"Testing that a value in the dictionary is a string")
+    # def test_10(self):
+    #     self.assertEqual(type(list(popular_tweets.keys())[0]),type(""),"Testing that a value in the dictionary is a string")
 
 unittest.main(verbosity=2)
 
